@@ -38,6 +38,11 @@ export async function scrapeIndeed({ query, logger }) {
         const companyEl = card.querySelector('[data-testid="company-name"]');
         const locEl = card.querySelector('[data-testid="text-location"]');
         const descEl = card.querySelector('.job-snippet');
+        const salaryEl = card.querySelector('.salary-snippet-container, .salary-snippet, .estimated-salary');
+        
+        // Indeed often puts experience in .attribute_snippet
+        const attributes = Array.from(card.querySelectorAll('.attribute_snippet, .metadata.items'));
+        const expAttr = attributes.find(el => el.innerText.toLowerCase().includes('year'));
 
         if (titleEl && titleEl.href) {
           results.push({
@@ -46,6 +51,8 @@ export async function scrapeIndeed({ query, logger }) {
             company: companyEl ? companyEl.innerText.trim() : '',
             location: locEl ? locEl.innerText.trim() : '',
             description: descEl ? descEl.innerText.trim() : '',
+            experience: expAttr ? expAttr.innerText.trim() : '',
+            salary: salaryEl ? salaryEl.innerText.trim() : '',
             applyUrl: titleEl.href
           });
         }

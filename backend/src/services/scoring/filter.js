@@ -50,7 +50,15 @@ export function evaluateFilters(job, resume = {}) {
   if (!rolePass) reasons.push('role_mismatch');
 
   // Experience filter
-  const jobMinExp = job.minExperience ?? extractMinYears(desc);
+  let jobMinExp = job.minExperience ?? extractMinYears(desc);
+  
+  // Seniority fallback: if title says "Senior", "Lead", etc., but no exp found, assume 5 years
+  const seniorKeywords = ['senior', 'sr', 'lead', 'architect', 'principal', 'head', 'manager', 'specialist'];
+  const isSeniorTitle = seniorKeywords.some(k => title.includes(k));
+  if (jobMinExp == null && isSeniorTitle) {
+    jobMinExp = 5;
+  }
+
   const expPass = jobMinExp == null || (jobMinExp >= prefMinYears && jobMinExp <= prefMaxYears);
   if (!expPass) reasons.push(`experience_mismatch:${jobMinExp}`);
 

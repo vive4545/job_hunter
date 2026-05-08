@@ -64,6 +64,7 @@ export function App() {
   const [resume, setResume] = useState(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  const [shortlistedOnly, setShortlistedOnly] = useState(false);
 
   const selected = useMemo(
     () => jobs.find((j) => j._id === selectedId) || null,
@@ -117,17 +118,52 @@ export function App() {
   }
 
   async function clearAll() {
-    if (!confirm('Are you sure you want to delete ALL jobs from the database?')) return;
+    console.log('[DEBUG] Clear all button clicked');
+    if (busy) return;
+    
+    console.log('[DEBUG] Starting fetch directly (confirm removed)...');
     setBusy(true);
+    setNotice('Clearing all jobs from database...');
+    
     try {
-      await fetch('/api/jobs', { method: 'DELETE' });
+      const res = await fetch('/api/jobs', { method: 'DELETE' });
+      console.log('[DEBUG] Fetch completed, status:', res.status);
+      
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('[DEBUG] Parse JSON result:', data);
+      
       setJobs([]);
       setSelectedId(null);
-      setNotice('All jobs cleared.');
+      setNotice('All jobs cleared successfully.');
+      console.log('[DEBUG] UI state updated, list should be empty now.');
+    } catch (err) {
+      console.error('[DEBUG] Clear all failed:', err);
+      setNotice('Error: ' + err.message);
     } finally {
       setBusy(false);
     }
   }
+
+  async function revaluateJobs() {
+    setBusy(true);
+    setNotice('');
+    try {
+      const r = await fetch('/api/jobs/revaluate', { method: 'POST' });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'revaluate_failed');
+      setNotice(`Re-filtered ${data.updatedCount} jobs based on your new preferences.`);
+      await loadAll();
+    } catch (e) {
+      setNotice('Error re-filtering: ' + e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
 
   async function updateStatus(jobId, status) {
     setNotice('');
@@ -260,6 +296,14 @@ export function App() {
               </option>
             ))}
           </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--brand)', fontWeight: '600' }}>
+            <input
+              type="checkbox"
+              checked={shortlistedOnly}
+              onChange={(e) => setShortlistedOnly(e.target.checked)}
+            />
+            Shortlisted Only 🎯
+          </label>
           <button className="button primary" onClick={runPipeline} disabled={busy}>
             {busy ? 'Running...' : 'Run pipeline'}
           </button>
@@ -281,7 +325,9 @@ export function App() {
         <section className="panel">
           <div className="panelHeader">Jobs</div>
           <div className="list">
-            {jobs.map((j) => (
+            {jobs
+              .filter(j => !shortlistedOnly || j.status === 'shortlisted')
+              .map((j) => (
               <button
                 key={j._id}
                 className={`listItem ${j._id === selectedId ? 'active' : ''} ${j.status === 'shortlisted' ? 'shortlisted-item' : ''}`}
@@ -424,6 +470,8 @@ export function App() {
           <div className="panelHeader">Resume</div>
           <ResumeEditor
             resume={resume}
+            busy={busy}
+            onRevaluate={revaluateJobs}
             onSave={saveResume}
             onUpload={uploadResume}
             onError={(msg) => setNotice(String(msg || 'Something went wrong.'))}
@@ -434,7 +482,7 @@ export function App() {
   );
 }
 
-function ResumeEditor({ resume, onSave, onUpload, onError }) {
+function ResumeEditor({ resume, busy, onRevaluate, onSave, onUpload, onError }) {
   const [draft, setDraft] = useState(
     resume || {
       name: '',
@@ -617,6 +665,14 @@ function ResumeEditor({ resume, onSave, onUpload, onError }) {
       />
       <button className="button primary" onClick={save} disabled={saving}>
         {saving ? 'Saving…' : 'Save resume'}
+      </button>
+      <button 
+        className="button" 
+        style={{ marginTop: '8px', width: '100%', borderColor: 'var(--brand)', color: 'var(--brand)' }} 
+        onClick={() => onRevaluate()}
+        disabled={busy}
+      >
+        🔄 Re-filter existing jobs
       </button>
     </div>
   );

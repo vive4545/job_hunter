@@ -137,6 +137,30 @@ export function apiRouter({ logger }) {
     res.json(result);
   });
 
+  r.post('/jobs/revaluate', async (_req, res) => {
+    const resume = await Resume.findOne().sort({ updatedAt: -1 }).lean();
+    if (!resume) return res.status(400).json({ error: 'resume_required' });
+
+    const jobs = await Job.find({ status: { $in: ['new', 'shortlisted'] } });
+    let updatedCount = 0;
+
+    const { evaluateFilters } = await import('../services/scoring/filter.js');
+    const { scoreAts } = await import('../services/scoring/ats.js');
+
+    for (const job of jobs) {
+      const filter = evaluateFilters(job, resume);
+      const ats = scoreAts({ job, resume });
+      const status = filter.passed && ats.score >= Number(process.env.ATS_MIN_SCORE || 55)
+        ? 'shortlisted'
+        : 'new';
+
+      await Job.findByIdAndUpdate(job._id, { $set: { filter, ats, status } });
+      updatedCount++;
+    }
+
+    res.json({ ok: true, updatedCount });
+  });
+
   r.get('/stats', async (_req, res) => {
     const [total, byStatus] = await Promise.all([
       Job.countDocuments({}),

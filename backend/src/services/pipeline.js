@@ -104,30 +104,48 @@ export async function runPipeline({ logger }) {
 
 function parseExperience(str) {
   if (!str) return {};
-  // Match "1-4 Yrs" or "5 Yrs"
-  const m = str.match(/(\d+)\s*-\s*(\d+)/);
-  if (m) {
-    return { minExperience: Number(m[1]), maxExperience: Number(m[2]) };
+  const s = str.toLowerCase();
+  // Match "1-4 Yrs" or "1 to 4 years"
+  const rangeMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)/);
+  if (rangeMatch) {
+    return { minExperience: Number(rangeMatch[1]), maxExperience: Number(rangeMatch[2]) };
   }
-  const m2 = str.match(/(\d+)/);
-  if (m2) {
-    return { minExperience: Number(m2[1]), maxExperience: Number(m2[1]) };
+  // Match "5+ years" or "5 years"
+  const plusMatch = s.match(/(\d+(?:\.\d+)?)\s*\+?\s*years?/);
+  if (plusMatch) {
+    const n = Number(plusMatch[1]);
+    return { minExperience: n, maxExperience: n + 2 };
   }
   return {};
 }
 
 function parseSalary(str) {
   if (!str || str.toLowerCase().includes('not disclosed')) return {};
-  // Match "3-8 Lacs" or "10 Lacs"
-  const m = str.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
-  if (m) {
-    return { minSalary: Number(m[1]), maxSalary: Number(m[2]) };
+  const s = str.replace(/,/g, '').toLowerCase();
+  
+  // Extract numbers
+  const nums = s.match(/(\d+(?:\.\d+)?)/g);
+  if (!nums) return {};
+
+  let min = Number(nums[0]);
+  let max = nums[1] ? Number(nums[1]) : min;
+
+  // Normalization logic
+  const isMonthly = s.includes('month') || s.includes('pm') || (min > 5000); // 5000+ is likely monthly INR
+  const isLakhs = s.includes('lac') || s.includes('lakh') || (min < 100); // < 100 is likely Lakhs PA
+
+  if (isMonthly) {
+    // Convert monthly to annual Lakhs
+    min = (min * 12) / 100000;
+    max = (max * 12) / 100000;
+  } else if (!isLakhs && min > 1000) {
+    // Likely annual in INR (e.g. 600000)
+    min = min / 100000;
+    max = max / 100000;
   }
-  const m2 = str.match(/(\d+(?:\.\d+)?)/);
-  if (m2) {
-    return { minSalary: Number(m2[1]), maxSalary: Number(m2[1]) };
-  }
-  return {};
+
+  return { minSalary: min, maxSalary: max };
 }
+
 
 
