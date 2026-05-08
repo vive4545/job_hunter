@@ -42,6 +42,8 @@ export async function scrapeNaukri({ query, logger }) {
         const companyEl = card.querySelector('a.comp-name, .companyName');
         const locEl = card.querySelector('.locWraper, .location');
         const descEl = card.querySelector('.job-desc, .description');
+        const expEl = card.querySelector('span.expwdth, .exp-wrap, .experience');
+        const salEl = card.querySelector('span.sal-wrap, .salary-wrap, .salary');
 
         if (titleEl.href) {
           results.push({
@@ -50,6 +52,8 @@ export async function scrapeNaukri({ query, logger }) {
             company: companyEl ? companyEl.innerText.trim() : '',
             location: locEl ? locEl.innerText.trim() : '',
             description: descEl ? descEl.innerText.trim() : '',
+            experience: expEl ? expEl.innerText.trim() : '',
+            salary: salEl ? salEl.innerText.trim() : '',
             applyUrl: titleEl.href
           });
         }

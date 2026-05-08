@@ -298,6 +298,10 @@ export function App() {
                   <span className="dot">•</span>
                   <span>{j.location || '—'}</span>
                   <span className="dot">•</span>
+                  <span>{j.experience || '—'}</span>
+                  <span className="dot">•</span>
+                  <span>{j.salary || '—'}</span>
+                  <span className="dot">•</span>
                   <span>ATS {j.ats?.score ?? 0}%</span>
                 </div>
                 {j.status === 'shortlisted' && (
@@ -327,6 +331,10 @@ export function App() {
                     <span>{selected.company || '—'}</span>
                     <span className="dot">•</span>
                     <span>{selected.location || '—'}</span>
+                    <span className="dot">•</span>
+                    <span>Exp: {selected.experience || '—'}</span>
+                    <span className="dot">•</span>
+                    <span>Salary: {selected.salary || '—'}</span>
                     <span className="dot">•</span>
                     <span className={`source-tag ${selected.source}`}>{selected.source}</span>
                   </div>
@@ -428,7 +436,18 @@ export function App() {
 
 function ResumeEditor({ resume, onSave, onUpload, onError }) {
   const [draft, setDraft] = useState(
-    resume || { name: '', headline: '', location: '', yearsOfExperience: 0, skills: [], text: '' }
+    resume || {
+      name: '',
+      headline: '',
+      location: '',
+      yearsOfExperience: 0,
+      skills: [],
+      text: '',
+      minSalaryPref: 0,
+      maxSalaryPref: 100,
+      minExpPref: 0,
+      maxExpPref: 50
+    }
   );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -456,7 +475,11 @@ function ResumeEditor({ resume, onSave, onUpload, onError }) {
               .split(',')
               .map((s) => s.trim())
               .filter(Boolean),
-        text: draft.text || ''
+        text: draft.text || '',
+        minSalaryPref: Number(draft.minSalaryPref || 0),
+        maxSalaryPref: Number(draft.maxSalaryPref || 0),
+        minExpPref: Number(draft.minExpPref || 0),
+        maxExpPref: Number(draft.maxExpPref || 0)
       };
       await onSave(payload);
     } catch (e) {
@@ -534,6 +557,57 @@ function ResumeEditor({ resume, onSave, onUpload, onError }) {
           value={draft.yearsOfExperience ?? 0}
           onChange={(e) => setField('yearsOfExperience', e.target.value)}
         />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: 'var(--surface-alt)', borderRadius: '8px', border: '1px border var(--border)' }}>
+        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--brand)' }}>Filtering Preferences</div>
+        <div className="row2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--muted)' }}>Min Exp Range</label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="Min Exp"
+              value={draft.minExpPref ?? 0}
+              onChange={(e) => setField('minExpPref', Number(e.target.value))}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--muted)' }}>Max Exp Range</label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="Max Exp"
+              value={draft.maxExpPref ?? 50}
+              onChange={(e) => setField('maxExpPref', Number(e.target.value))}
+            />
+          </div>
+        </div>
+        <div className="row2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--muted)' }}>Min Salary (Lakhs)</label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="Min Salary"
+              value={draft.minSalaryPref ?? 0}
+              onChange={(e) => setField('minSalaryPref', Number(e.target.value))}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--muted)' }}>Max Salary (Lakhs)</label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="Max Salary"
+              value={draft.maxSalaryPref ?? 100}
+              onChange={(e) => setField('maxSalaryPref', Number(e.target.value))}
+            />
+          </div>
+        </div>
       </div>
       <textarea
         className="textarea"

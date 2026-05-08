@@ -86,7 +86,11 @@ export function apiRouter({ logger }) {
       location: z.string().optional(),
       yearsOfExperience: z.number().min(0).max(50).optional(),
       skills: z.array(z.string()).optional(),
-      text: z.string().optional()
+      text: z.string().optional(),
+      minSalaryPref: z.number().optional(),
+      maxSalaryPref: z.number().optional(),
+      minExpPref: z.number().optional(),
+      maxExpPref: z.number().optional()
     });
     const parsed = bodySchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json(parsed.error);

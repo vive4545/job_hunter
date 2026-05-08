@@ -7,6 +7,12 @@ const JobSchema = new mongoose.Schema(
     company: { type: String, default: '' },
     location: { type: String, default: '' },
     description: { type: String, default: '' },
+    salary: { type: String, default: '' },
+    minSalary: { type: Number },
+    maxSalary: { type: Number },
+    experience: { type: String, default: '' },
+    minExperience: { type: Number },
+    maxExperience: { type: Number },
     applyUrl: { type: String, required: true, unique: true, index: true },
     scrapedAt: { type: Date, default: () => new Date() },
 

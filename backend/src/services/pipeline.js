@@ -31,7 +31,11 @@ export async function runPipeline({ logger }) {
             title: item.title,
             company: item.company || '',
             location: item.location || '',
-            description: item.description || ''
+            description: item.description || '',
+            salary: item.salary || '',
+            experience: item.experience || '',
+            ...parseExperience(item.experience),
+            ...parseSalary(item.salary)
           }
         },
         { upsert: true, new: true }
@@ -50,7 +54,7 @@ export async function runPipeline({ logger }) {
   await Promise.all(
     upserted.map((job) =>
       limit(async () => {
-        const filter = evaluateFilters(job);
+        const filter = evaluateFilters(job, resume);
         const ats = scoreAts({ job, resume });
         const status =
           filter.passed && ats.score >= Number(process.env.ATS_MIN_SCORE || 55)
@@ -97,4 +101,33 @@ export async function runPipeline({ logger }) {
     }
   };
 }
+
+function parseExperience(str) {
+  if (!str) return {};
+  // Match "1-4 Yrs" or "5 Yrs"
+  const m = str.match(/(\d+)\s*-\s*(\d+)/);
+  if (m) {
+    return { minExperience: Number(m[1]), maxExperience: Number(m[2]) };
+  }
+  const m2 = str.match(/(\d+)/);
+  if (m2) {
+    return { minExperience: Number(m2[1]), maxExperience: Number(m2[1]) };
+  }
+  return {};
+}
+
+function parseSalary(str) {
+  if (!str || str.toLowerCase().includes('not disclosed')) return {};
+  // Match "3-8 Lacs" or "10 Lacs"
+  const m = str.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
+  if (m) {
+    return { minSalary: Number(m[1]), maxSalary: Number(m[2]) };
+  }
+  const m2 = str.match(/(\d+(?:\.\d+)?)/);
+  if (m2) {
+    return { minSalary: Number(m2[1]), maxSalary: Number(m2[1]) };
+  }
+  return {};
+}
+
 
